@@ -4,53 +4,116 @@ import java.io.*;
 public class Server extends Thread
 {
     private ServerSocket serverSocket;
-    public Server(int port) throws IOException
-    {
-        serverSocket = new ServerSocket(port);
-        serverSocket.setSoTimeout(10000);
+    private Socket server;
+    private int port;
+    private int timeout;
+
+    public static void main(String[] args){
+        Thread t = new Server();
+        t.start();
     }
+
+    public Server()
+    {
+        this.port = 21;
+        this.timeout = 10000;
+    }
+
+    public Server(int port)
+    {
+        this.port = port;
+        this.timeout = 10000;
+    }
+
+    public Server(int port, int timeout)
+    {
+        this.port = port;
+        this.timeout = timeout;
+    }
+
     public void run()
     {
+
         while(true)
         {
-            try
-            {
-                System.out.println("Waiting for client on port " +
-                        serverSocket.getLocalPort() + "...");
-                Socket server = serverSocket.accept();
-                System.out.println("Just connected to "
-                        + server.getRemoteSocketAddress());
-                DataInputStream in =
-                        new DataInputStream(server.getInputStream());
-                System.out.println(in.readUTF());
-                DataOutputStream out =
-                        new DataOutputStream(server.getOutputStream());
-                out.writeUTF("Thank you for connecting to "
-                        + server.getLocalSocketAddress() + "\nGoodbye!");
-                server.close();
-            }catch(SocketTimeoutException s)
-            {
-                System.out.println("Socket timed out!");
-                break;
-            }catch(IOException e)
-            {
-                e.printStackTrace();
+            String message = "This is CECS 327 Message";
+            makeServerSocket();
+            connectToClient();
+            if(this.server == null){
                 break;
             }
+            System.out.println(getInputStreamContent());
+            setOutputStreamContent(message);
+            closeServer();
         }
     }
-    /*
-    public static void main(String [] args)
-    {
-     int port = 80;
-     try
-     {
-        Thread t = new Server(port);
-        t.start();
-     }catch(IOException e)
-     {
-        e.printStackTrace();
-     }
-  }
-  */
+
+    private void makeServerSocket(){
+        try {
+            this.serverSocket = new ServerSocket(this.port);
+        } catch (IOException e) {
+            System.out.println("Cannot make a server socket at port " + this.port);
+            e.printStackTrace();
+        }
+        try {
+            this.serverSocket.setSoTimeout(this.timeout);
+        } catch (SocketException e) {
+            System.out.println("Error with timeout");
+            e.printStackTrace();
+        }
+    }
+
+    private void connectToClient(){
+        this.server = null;
+        try {
+            System.out.println("Waiting for server on port " +
+                    this.serverSocket.getLocalPort() + "...");
+            this.server = this.serverSocket.accept();
+
+            System.out.println("Just connected to "
+                    + this.server.getRemoteSocketAddress());
+
+        } catch(SocketTimeoutException s)
+        {
+            System.out.println("Socket timed out!");
+        } catch(IOException e){
+            System.out.println("Failed to connect to port");
+            e.printStackTrace();
+        }
+    }
+
+    private void closeServer(){
+        try{
+            this.server.close();
+        } catch(IOException e){
+            System.out.println("Client failed to close or is null");
+            e.printStackTrace();
+        }
+    }
+
+    private String getInputStreamContent(){
+        String message = null;
+        DataInputStream in;
+        try {
+            in = new DataInputStream(this.server.getInputStream());
+
+            message = in.readUTF();
+        }catch (IOException e) {
+            System.out.println("No input stream found");
+            e.printStackTrace();
+        }
+
+        return message;
+    }
+
+    private void setOutputStreamContent(String message){
+        DataOutputStream out;
+        try {
+            out = new DataOutputStream(this.server.getOutputStream());
+            out.writeUTF(message);
+        }catch (IOException e) {
+            System.out.println("No output stream found");
+            e.printStackTrace();
+        }
+    }
 }
