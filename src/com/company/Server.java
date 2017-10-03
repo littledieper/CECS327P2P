@@ -42,8 +42,9 @@ public class Server extends Thread
             if(this.server == null){
                 break;
             }
-            System.out.println(getInputStreamContent());
-            setOutputStreamContent(message);
+            //System.out.println(getInputStreamContent());
+            //setOutputStreamContent(message);
+            sendFile("cat.jpg");
             closeServer();
         }
     }
@@ -115,5 +116,28 @@ public class Server extends Thread
             System.out.println("No output stream found");
             e.printStackTrace();
         }
+    }
+
+    private boolean sendFile(String pathName) {
+        File file = new File(pathName);
+        byte [] fileBytes = new byte[(int) file.length()];
+
+        try {
+            InputStream fileReader = new FileInputStream(file);
+            OutputStream outputStream = server.getOutputStream();
+
+            int count;
+            while ((count = fileReader.read(fileBytes)) > 0) {
+                outputStream.write(fileBytes, 0, count);
+            }
+
+            fileReader.close();
+            outputStream.close();
+        } catch (IOException e) {
+            System.out.println("Server.sendFile() failed");
+            return false;
+        }
+
+        return true;
     }
 }

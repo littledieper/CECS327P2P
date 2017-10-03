@@ -16,7 +16,7 @@ public class Client extends Thread
 
     public Client()
     {
-        this.serverName = "192.168.1.2";
+        this.serverName = "127.0.0.1";
         this.port = 21;
     }
 
@@ -34,29 +34,26 @@ public class Client extends Thread
 
     public void run()
     {
-        while(true)
-        {
-            String message = "This is CECS 327 Message";
-            connectToServer();
-            if(this.client == null){
-                break;
-            }
-            setOutputStreamContent(message);
-            System.out.println(getInputStreamContent());
-            closeClient();
+        String message = "This is CECS 327 Message";
+        connectToServer();
+        if(this.client == null){
+            return;
         }
+        //setOutputStreamContent(message);
+        //System.out.println(getInputStreamContent());
+        recieveFile("catrecieve.jpg");
+        closeClient();
     }
 
     private void connectToServer(){
         this.client = null;
         try {
             System.out.println("Connecting to " + serverName
-                    + " on port " + client.getLocalPort());
+                    + " on port " + this.port);
             this.client = new Socket(serverName, this.port);
             System.out.println("Just connected to "
                     + client.getRemoteSocketAddress());
-        } catch(SocketTimeoutException s)
-        {
+        } catch(SocketTimeoutException s) {
             System.out.println("Socket timed out!");
         } catch(IOException e){
             System.out.println("Failed to connect to port");
@@ -98,4 +95,28 @@ public class Client extends Thread
             e.printStackTrace();
         }
     }
+
+    private boolean recieveFile(String pathName) {
+        File file = new File(pathName);
+        byte [] fileBytes = new byte[16*1024];
+
+        try {
+            file.createNewFile();
+            InputStream inputStream = client.getInputStream();
+            OutputStream fileWriter = new FileOutputStream(file);
+
+            int count;
+            while ((count = inputStream.read(fileBytes)) > 0) {
+                fileWriter.write(fileBytes, 0, count);
+            }
+
+            fileWriter.close();
+            inputStream.close();
+        } catch (IOException e) {
+            System.out.println("Client.recieveFile() failed");
+            return false;
+        }
+
+        return true;
+    } // end receiveFile()
 }
