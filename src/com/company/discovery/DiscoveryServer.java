@@ -51,6 +51,9 @@ public class DiscoveryServer extends Thread{
         }
     }
 
+    /**
+     * Makes the server socket + sets the port and timeout.
+     */
     private void makeServerSocket() {
         try {
             this.serverSocket = new ServerSocket(this.port);
