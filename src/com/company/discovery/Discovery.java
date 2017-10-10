@@ -1,0 +1,162 @@
+package com.company.discovery;
+
+import java.io.IOException;
+import java.net.*;
+import java.util.ArrayList;
+
+/**
+ * Discovery is a thread-based discovery client that searches for a
+ */
+public class Discovery extends Thread {
+
+    /** List of IPs that are on our local network with the given port open + listening */
+    static private ArrayList<String> ips = new ArrayList<>();
+    /** Port to check for listening ServerSockets. */
+    private int port;
+
+    /**
+     * Default constructor - just sets the searching port to 27015
+     */
+    public Discovery() {
+        int port = 27015;
+    }
+
+    /**
+     * Port constructor - sets the searching port to the given argument.
+     * @param port      port to try to connect to when a computer is found on the LAN
+     */
+    public Discovery(int port) {
+        this.port = port;
+    }
+
+    @SuppressWarnings("InfiniteLoopStatement")
+    public void run() {
+        while (true) {
+            getAvailableNodes();
+        }
+    }
+
+    /**
+     * Finds the available nodes on the local network that have ServerSockets
+     * open on port this.port and adds them to the this.ips ArrayList
+     */
+    private void getAvailableNodes() {
+        int timeout = 1000;
+        String ip = getLocalIp();
+        String subnet = getSubnet();
+
+        // Find connected devices to this LAN
+        // x.x.x.1 (like 192.168.1.1) is the default gateway, so ignore.
+        for (int i = 2; i < 255; ++i) {
+            String possibleNode = subnet + "." + i;
+
+            // We've found this computer, so just skip it...
+            if (possibleNode.equals(getLocalIp()))
+                continue;
+
+            // Is there a computer at the given IPv4 address?
+            if (isAddressReachable(possibleNode, timeout)) {
+                System.out.println(possibleNode);
+                // is it listening on our port?
+                if (isListeningOnPort(possibleNode, port, timeout)) {
+                    ips.add(possibleNode);
+                } // end nested if
+            }
+        }
+    }
+
+    /**
+     * Checks to see if the given IPv4 address is reachable on our network
+     * @param possibleNode IPv4 address of a possible node
+     * @param timeout      ttl of the request
+     * @return      TRUE: if possibleNode is reachable
+     *              FALSE: if possibleNode is not reachable, or is empty string.
+     */
+    private boolean isAddressReachable(String possibleNode, int timeout) {
+        if (possibleNode.isEmpty())
+            return false;
+
+        try {
+            return InetAddress.getByName(possibleNode).isReachable(timeout);
+        } catch (IOException e) {
+            System.out.println("isAddressReachable() could not find host.");
+            e.printStackTrace();
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks to see if the given possibleNode IPv4 address is listening on the given port
+     *
+     * @param possibleNode  IPv4 address to test
+     * @param port          port to try and check
+     * @param timeout       ttl for request
+     * @return      TRUE: on successful connection to the possibleNode @ port
+     *              FALSE: on a non-successful connection to the possibleNode @ port
+     *                     if possilbeNode is empty string, or port is 0
+     */
+    private boolean isListeningOnPort(String possibleNode, int port, int timeout) {
+        if (possibleNode.isEmpty() || port == 0)
+            return false;
+
+        Socket socket = null;
+        try {
+            socket = new Socket();
+            socket.connect(new InetSocketAddress(possibleNode, port), timeout);
+
+            return socket.isConnected();
+        } catch (IOException e) {
+            System.out.println("isListeningOnPort() could not find host.");
+            //e.printStackTrace();
+        } finally {
+            if (socket != null)
+            {
+
+                try {
+                    sleep(5000);
+                    socket.close();
+                } catch (IOException e) {
+                    //e.printStackTrace();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns the local host IP of this computer (e.g. 192.168.1.2 or 127.0.0.1)
+     *
+     * @return IPv4 address of this computer
+     */
+    private String getLocalIp() {
+        String ip = "";
+        try {
+            InetAddress localHost = Inet4Address.getLocalHost();
+            ip = localHost.getHostAddress();
+        } catch (UnknownHostException e) {
+            System.out.println("getLocalIp() failed with unknown host.");
+            e.printStackTrace();
+        }
+
+        return ip;
+    }
+
+    /**
+     * Returns the subnet of the LAn. (e.g. 192.168.1 or 127.0.0);
+     *
+     * @return IPv4 subnet of this computer
+     */
+    private String getSubnet() {
+        String ip = getLocalIp();
+
+        return ip.substring(0, ip.lastIndexOf("."));
+    }
+
+    public ArrayList<String> getIps() {
+        return ips;
+    }
+}
