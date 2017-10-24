@@ -1,6 +1,9 @@
 package com.company;
 import java.net.*;
 import java.io.*;
+import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
+
 public class Server extends Thread
 {
     private ServerSocket serverSocket;
@@ -9,7 +12,7 @@ public class Server extends Thread
     private int timeout;
 
     public static void main(String[] args){
-        Thread t = new Server();
+        Thread t = new Server(21, 60000);
         t.start();
     }
 
@@ -17,34 +20,47 @@ public class Server extends Thread
     {
         this.port = 21;
         this.timeout = 10000;
+        makeServerSocket();
     }
 
     public Server(int port)
     {
         this.port = port;
         this.timeout = 10000;
+        makeServerSocket();
     }
 
     public Server(int port, int timeout)
     {
         this.port = port;
         this.timeout = timeout;
+        makeServerSocket();
     }
 
     public void run()
     {
-
+        FileTransfer ft;
         while(true)
         {
-            String message = "This is CECS 327 Message";
-            makeServerSocket();
+            //Lock
             connectToClient();
             if(this.server == null){
                 break;
             }
-            //System.out.println(getInputStreamContent());
-            //setOutputStreamContent(message);
-            sendFile("cat.jpg");
+            //transfer names and metadata
+            try{
+                ft = new FileTransfer();
+                ft.listFiles();
+                OutputFileAttr(ft);
+                if(ft.toString() == null)
+                    System.out.println("empty");
+                else
+                    System.out.println(ft.toString());
+            }catch(Exception e){System.out.println("cannot open path server");}
+
+
+            //synchronize files
+
             closeServer();
         }
     }
@@ -117,6 +133,18 @@ public class Server extends Thread
             e.printStackTrace();
         }
     }
+
+    private void OutputFileAttr(FileTransfer ft){
+        ObjectOutputStream out;
+        try {
+            out = new ObjectOutputStream(this.server.getOutputStream());
+            out.writeObject(ft);
+        }catch (IOException e) {
+            System.out.println("No output stream found");
+            e.printStackTrace();
+        }
+    }
+
 
     private boolean sendFile(String pathName) {
         File file = new File(pathName);

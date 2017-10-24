@@ -1,22 +1,26 @@
 package com.company;
 import java.net.*;
 import java.io.*;
+import java.nio.file.attribute.BasicFileAttributes;
+import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 public class Client extends Thread
 {
     private String serverName;
     private Socket client;
     private int port;
+    private String threadMessage;
 
     public static void main(String [] args)
     {
-        Thread t = new Client();
+        Thread t = new Client("0.0.0.0",21,"thread1");
         t.start();
     }
 
     public Client()
     {
-        this.serverName = "127.0.0.1";
+        this.serverName = "0.0.0.0";
         this.port = 21;
     }
 
@@ -32,16 +36,28 @@ public class Client extends Thread
         this.port = port;
     }
 
+    public Client(String serverName, int port, String message)
+    {
+        this.serverName = serverName;
+        this.port = port;
+        this.threadMessage = message;
+    }
+
     public void run()
     {
-        String message = "This is CECS 327 Message";
         connectToServer();
         if(this.client == null){
             return;
         }
-        //setOutputStreamContent(message);
-        //System.out.println(getInputStreamContent());
-        recieveFile("catrecieve.jpg");
+        FileTransfer ft = InputFileAttr();
+        FileTransfer clientFT;
+        if(ft == null)
+            System.out.println("Null object");
+        else{
+            try{
+                clientFT = new FileTransfer();
+            }catch(Exception e){}
+        }
         closeClient();
     }
 
@@ -96,6 +112,22 @@ public class Client extends Thread
         }
     }
 
+    private FileTransfer InputFileAttr(){
+        ObjectInputStream in;
+        FileTransfer ft;
+
+        try {
+            in = new ObjectInputStream(this.client.getInputStream());
+            ft = (FileTransfer)in.readObject();
+
+            return ft;
+        }catch (Exception e) {
+            System.out.println("No input stream found");
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     private boolean recieveFile(String pathName) {
         File file = new File(pathName);
         byte [] fileBytes = new byte[16*1024];
@@ -119,4 +151,6 @@ public class Client extends Thread
 
         return true;
     } // end receiveFile()
+
+
 }
