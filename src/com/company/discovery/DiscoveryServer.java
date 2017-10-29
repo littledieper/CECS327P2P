@@ -13,13 +13,13 @@ public class DiscoveryServer extends Thread{
 
     /** DiscoveryServer should never timeout, i.e. it's 0 */
     private final int timeout = 0;
-    /** ServerSocket for the DisoveryServer that listens to a port */
+    /** ServerSocket for the DiscoveryServer that listens to a port */
     private ServerSocket serverSocket;
     /** Port that the serverSocket will listen on */
     private int port;
 
     /**
-     *  Default constructor - creatses a serverSocket that defaults to listening port 27015.
+     *  Default constructor - creates a serverSocket that defaults to listening port 27015.
      */
     public DiscoveryServer() {
         this.port = 27015;
@@ -43,7 +43,7 @@ public class DiscoveryServer extends Thread{
                 if (socket == null)
                     continue;
 
-                System.out.println("DiscoveryServer recieved connection from: " +
+                System.out.println("DiscoveryServer received connection from: " +
                                     socket.getRemoteSocketAddress());
             } catch (IOException e) {
                 System.out.println("DiscoveryServer.run() accept failed.");
@@ -59,7 +59,7 @@ public class DiscoveryServer extends Thread{
             this.serverSocket = new ServerSocket(this.port);
             this.serverSocket.setSoTimeout(this.timeout);
         } catch (IOException e) {
-            System.out.println("DisoveryServer.makeServerSocket() failed to make a serverSocket.");
+            System.out.println("DiscoveryServer.makeServerSocket() failed to make a serverSocket.");
         }
     }
-} // end DisvoeryServer.java
+} // end DisvcoeryServer.java
