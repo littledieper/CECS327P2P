@@ -2,15 +2,16 @@ package com.company.discovery;
 
 import java.io.IOException;
 import java.net.*;
-import java.util.ArrayList;
+import java.util.HashSet;
 
 /**
  * Discovery is a thread-based discovery client that searches for a
  */
 public class Discovery extends Thread {
-
+    
+    // Change List to Set for better performance + we don't really care about the order of the elements.
     /** List of IPs that are on our local network with the given port open + listening */
-    static private ArrayList<String> ips = new ArrayList<>();
+    static private HashSet<String> ips = new HashSet<>();
     /** Port to check for listening ServerSockets. */
     private int port;
 
@@ -41,7 +42,7 @@ public class Discovery extends Thread {
      * open on port this.port and adds them to the this.ips ArrayList
      */
     private void getAvailableNodes() {
-        int timeout = 1000;
+        int timeout = 750;
         String ip = getLocalIp();
         String subnet = getSubnet();
 
@@ -51,7 +52,7 @@ public class Discovery extends Thread {
             String possibleNode = subnet + "." + i;
 
             // We've found this computer, so just skip it...
-            if (possibleNode.equals(getLocalIp()))
+            if (possibleNode.equals(ip))
                 continue;
 
             // Is there a computer at the given IPv4 address?
@@ -61,6 +62,11 @@ public class Discovery extends Thread {
                 if (isListeningOnPort(possibleNode, port, timeout)) {
                     ips.add(possibleNode);
                 } // end nested if
+            } else {
+                // If the address isn't reachable but is contained in our list, then we should remove it
+                // so we don't try to connect to it anymore.
+                if (ips.contains(possibleNode))
+                    ips.remove(possibleNode);
             }
         }
     }
@@ -73,7 +79,7 @@ public class Discovery extends Thread {
      *              FALSE: if possibleNode is not reachable, or is empty string.
      */
     private boolean isAddressReachable(String possibleNode, int timeout) {
-        if (possibleNode.isEmpty())
+        if (possibleNode.isEmpty() || timeout == 0)
             return false;
 
         try {
@@ -94,10 +100,10 @@ public class Discovery extends Thread {
      * @param timeout       ttl for request
      * @return      TRUE: on successful connection to the possibleNode @ port
      *              FALSE: on a non-successful connection to the possibleNode @ port
-     *                     if possilbeNode is empty string, or port is 0
+     *                     if possibleNode is empty string, or port is 0
      */
     private boolean isListeningOnPort(String possibleNode, int port, int timeout) {
-        if (possibleNode.isEmpty() || port == 0)
+        if (possibleNode.isEmpty() || port == 0 || timeout == 0)
             return false;
 
         Socket socket = null;
@@ -156,7 +162,5 @@ public class Discovery extends Thread {
         return ip.substring(0, ip.lastIndexOf("."));
     }
 
-    public ArrayList<String> getIps() {
-        return ips;
-    }
+    public HashSet<String> getIps() { return ips; }
 }
