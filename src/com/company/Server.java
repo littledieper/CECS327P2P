@@ -84,7 +84,14 @@ public class Server extends Thread
         try {
             System.out.println("Waiting for server on port " +
                     this.serverSocket.getLocalPort() + "...");
-            this.server = this.serverSocket.accept();
+
+            // <alex> 23-Oct-2017
+            // Temporarily close the serverSocket while we're dealing with the connection. When we close the socket
+            // using closeServer(), we'll reopen it.
+            if (this.server == null) {
+                this.server = this.serverSocket.accept();
+                serverSocket.close();
+            }
 
             System.out.println("Just connected to "
                     + this.server.getRemoteSocketAddress());
@@ -101,6 +108,12 @@ public class Server extends Thread
     private void closeServer(){
         try{
             this.server.close();
+
+            // <alex> 23-Oct-2017
+            // Reopen the serverSocket once we're finished with the Socket to the client.
+            if (serverSocket.isClosed())
+                makeServerSocket();
+
         } catch(IOException e){
             System.out.println("Client failed to close or is null");
             e.printStackTrace();
