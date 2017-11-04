@@ -50,7 +50,6 @@ public class Server extends Thread
             //transfer names and metadata
             try{
                 ft = new FileTransfer();
-                ft.listFiles();
                 OutputFileAttr(ft);
                 if(ft.toString() == null)
                     System.out.println("empty");
