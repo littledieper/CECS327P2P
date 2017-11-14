@@ -4,7 +4,7 @@ import java.io.*;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 
-public class Server extends Thread
+public class Server extends NetworkProtocol implements Runnable
 {
     private ServerSocket serverSocket;
     private Socket server;
@@ -12,8 +12,6 @@ public class Server extends Thread
     private int timeout;
 
     public static void main(String[] args){
-        Thread t = new Server(21, 60000);
-        t.start();
     }
 
     public Server()
@@ -50,8 +48,8 @@ public class Server extends Thread
             //transfer names and metadata
             try{
                 ft = new FileTransfer();
-                ft.listFiles();
-                OutputFileAttr(ft);
+                ObjectOutputStream out = new ObjectOutputStream(server.getOutputStream());
+                OutputFileAttr(out, ft);
                 if(ft.toString() == null)
                     System.out.println("empty");
                 else
@@ -119,66 +117,5 @@ public class Server extends Thread
             System.out.println("Client failed to close or is null");
             e.printStackTrace();
         }
-    }
-
-    private String getInputStreamContent(){
-        String message = null;
-        DataInputStream in;
-        try {
-            in = new DataInputStream(this.server.getInputStream());
-
-            message = in.readUTF();
-        }catch (IOException e) {
-            System.out.println("No input stream found");
-            e.printStackTrace();
-        }
-
-        return message;
-    }
-
-    private void setOutputStreamContent(String message){
-        DataOutputStream out;
-        try {
-            out = new DataOutputStream(this.server.getOutputStream());
-            out.writeUTF(message);
-        }catch (IOException e) {
-            System.out.println("No output stream found");
-            e.printStackTrace();
-        }
-    }
-
-    private void OutputFileAttr(FileTransfer ft){
-        ObjectOutputStream out;
-        try {
-            out = new ObjectOutputStream(this.server.getOutputStream());
-            out.writeObject(ft);
-        }catch (IOException e) {
-            System.out.println("No output stream found");
-            e.printStackTrace();
-        }
-    }
-
-
-    private boolean sendFile(String pathName) {
-        File file = new File(pathName);
-        byte [] fileBytes = new byte[(int) file.length()];
-
-        try {
-            InputStream fileReader = new FileInputStream(file);
-            OutputStream outputStream = server.getOutputStream();
-
-            int count;
-            while ((count = fileReader.read(fileBytes)) > 0) {
-                outputStream.write(fileBytes, 0, count);
-            }
-
-            fileReader.close();
-            outputStream.close();
-        } catch (IOException e) {
-            System.out.println("Server.sendFile() failed");
-            return false;
-        }
-
-        return true;
     }
 }

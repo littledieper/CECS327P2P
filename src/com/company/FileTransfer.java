@@ -29,13 +29,14 @@ public class FileTransfer implements Serializable {
         FileTransfer ft;
         try{
             ft = new FileTransfer();
-            System.out.println(ft.toString());
+            //System.out.println(ft.toString());
         }
         catch(IOException e){System.out.println("Cannot open path");}
 
     }
 
     public void listFiles() throws IOException {
+        fileAttr.clear();
         Files.walkFileTree(Paths.get(this.path), new SimpleFileVisitor<Path>() {
             public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                 Path getPath = Paths.get(path);

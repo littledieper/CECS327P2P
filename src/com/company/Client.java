@@ -5,7 +5,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-public class Client extends Thread
+public class Client extends NetworkProtocol implements Runnable
 {
     private String serverName;
     private Socket client;
@@ -14,8 +14,6 @@ public class Client extends Thread
 
     public static void main(String [] args)
     {
-        Thread t = new Client("0.0.0.0",21,"thread1");
-        t.start();
     }
 
     public Client()
@@ -49,15 +47,19 @@ public class Client extends Thread
         if(this.client == null){
             return;
         }
-        FileTransfer ft = InputFileAttr();
+
+
         FileTransfer clientFT;
-        if(ft == null)
-            System.out.println("Null object");
-        else{
-            try{
+
+        try{
+            ObjectInputStream in = new ObjectInputStream(client.getInputStream());
+            FileTransfer ft = InputFileAttr(in);
+            if(ft != null)
                 clientFT = new FileTransfer();
-            }catch(Exception e){}
-        }
+            System.out.println("Null object");
+            in.close();
+        }catch(Exception e){System.out.println(e.toString());}
+
         closeClient();
     }
 
@@ -85,72 +87,6 @@ public class Client extends Thread
             e.printStackTrace();
         }
     }
-
-    private String getInputStreamContent(){
-        String message = null;
-        DataInputStream in;
-        try {
-            in = new DataInputStream(this.client.getInputStream());
-
-            message = in.readUTF();
-        }catch (IOException e) {
-            System.out.println("No input stream found");
-            e.printStackTrace();
-        }
-
-        return message;
-    }
-
-    private void setOutputStreamContent(String message){
-        DataOutputStream out;
-        try {
-            out = new DataOutputStream(this.client.getOutputStream());
-            out.writeUTF(message);
-        }catch (IOException e) {
-            System.out.println("No output stream found");
-            e.printStackTrace();
-        }
-    }
-
-    private FileTransfer InputFileAttr(){
-        ObjectInputStream in;
-        FileTransfer ft;
-
-        try {
-            in = new ObjectInputStream(this.client.getInputStream());
-            ft = (FileTransfer)in.readObject();
-
-            return ft;
-        }catch (Exception e) {
-            System.out.println("No input stream found");
-            e.printStackTrace();
-        }
-        return null;
-    }
-
-    private boolean recieveFile(String pathName) {
-        File file = new File(pathName);
-        byte [] fileBytes = new byte[16*1024];
-
-        try {
-            file.createNewFile();
-            InputStream inputStream = client.getInputStream();
-            OutputStream fileWriter = new FileOutputStream(file);
-
-            int count;
-            while ((count = inputStream.read(fileBytes)) > 0) {
-                fileWriter.write(fileBytes, 0, count);
-            }
-
-            fileWriter.close();
-            inputStream.close();
-        } catch (IOException e) {
-            System.out.println("Client.recieveFile() failed");
-            return false;
-        }
-
-        return true;
-    } // end receiveFile()
 
 
 }
