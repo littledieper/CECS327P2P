@@ -1,81 +1,203 @@
 package com.company;
 
+import com.company.file.SerialFileAttr;
+
 import java.io.*;
-import java.nio.file.attribute.BasicFileAttributes;
+import java.net.Socket;
+import java.util.HashSet;
 
 public abstract class NetworkProtocol {
 
-    protected String recieveMessage(DataInputStream in, String message) throws IOException{
-        message = in.readUTF();
-        return message;
-    }
+    private static final int BUFFER_SIZE = 8196; // 8kb
 
-    protected void sendMessage(DataOutputStream out, String message) throws IOException{
-        out.writeUTF(message);
-    }
+    /**
+     * Socket of the class that extends this.
+     * Classes that extend + create objects of this should close this on cleanup.
+     */
+    protected Socket socket;
 
-    protected FileTransfer recieveFileTransfer(ObjectInputStream in) throws IOException, ClassNotFoundException{
-        FileTransfer ft;
-        Object inObject = in.readObject();
-        if(inObject instanceof FileTransfer) ft = (FileTransfer)in.readObject();
-        else ft = null;
+    /**
+     * String of the relative directory to send or receive files from.
+     */
+    protected String directory;
 
-        return ft;
-    }
-
-    protected void sendFileTransfer(ObjectOutputStream out, FileTransfer ft) throws IOException{
-        out.writeObject(ft);
-    }
-
-    protected void recieveFile(InputStream inputStream, long fileSize, String pathName) throws IOException {
-        File file = new File(pathName);
-
-        byte[] fileBytes = new byte[(int)fileSize];
-        int count = 0;
-
-        file.createNewFile();
-        OutputStream fileWriter = new FileOutputStream(file);
-
-
-        while ((count = inputStream.read(fileBytes)) > 0) {
-            fileWriter.write(fileBytes, 0, count);
-        }
-        fileWriter.close();
-    }
-
-    protected void sendFile(OutputStream outputStream, String pathName) throws IOException{
-        File file = new File(pathName);
-        byte [] fileBytes = new byte[(int) file.length()];
-        InputStream fileReader = new FileInputStream(file);
-
-        outputStream.write(fileBytes);
-
-
-        fileReader.close();
-    }
-
-    protected FileTransfer InputFileAttr(ObjectInputStream in){
-        FileTransfer ft;
+    protected String recieveMessage() {
+        if (this.socket == null)
+            return "";
 
         try {
-            ft = (FileTransfer)in.readObject();
-
-            return ft;
-        }catch (Exception e) {
-            System.out.println("No input stream found");
+            DataInputStream in = new DataInputStream(this.socket.getInputStream());
+            return in.readUTF();
+        } catch (IOException e) {
             e.printStackTrace();
         }
-        return null;
+
+        return "";
     }
 
-    protected void OutputFileAttr(ObjectOutputStream out, FileTransfer ft){
+    protected void sendMessage(String message) {
+        if (this.socket == null)
+            return;
+
         try {
-            out.writeObject(ft);
-        }catch (IOException e) {
-            System.out.println("No output stream found");
+            DataOutputStream out = new DataOutputStream(this.socket.getOutputStream());
+            out.writeUTF(message);
+            out.flush();
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
+    /**
+     * Receives a HashSet of SerialFileAttr's transferred over the network via a socket from the remote computer.
+     * @return  All files in the remote PC's directory.
+     *          NULL if passed something that's not the above container.
+     */
+    protected HashSet<SerialFileAttr> receiveFileInfo() {
+        HashSet<SerialFileAttr> files = null;
 
+        try {
+            ObjectInputStream in = new ObjectInputStream(this.socket.getInputStream());
+
+            // Read the object from the stream and make sure its a HashSet.
+            Object receivedObject = in.readObject();
+            if (receivedObject instanceof HashSet)
+                files = (HashSet<SerialFileAttr>) receivedObject;
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        return files;
+    }
+
+    /**
+     * Sends a HashSet of SerialFileAttr's transferred over the network via a socket to the remote computer.
+     * @param files     files to send over the network.
+     */
+    protected void sendFileInfo(HashSet<SerialFileAttr> files) {
+        if (files == null)
+            return;
+
+        try {
+            ObjectOutputStream out = new ObjectOutputStream(this.socket.getOutputStream());
+            out.writeObject(files);
+            out.flush();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Receive's a file from the remote computer and places it into the given directory (relative, abs may work).
+     * @param fileToReceive File received from the remote PC.
+     */
+    protected void receiveFile(SerialFileAttr fileToReceive) {
+        // Create the file + allocate the buffer in an array
+        File file = new File(directory + fileToReceive.getName());
+        byte [] fileBytes = new byte[BUFFER_SIZE]; // buffer size
+
+        try {
+            // If it doesn't exist, create the destination file.
+            file.createNewFile();
+
+            // Open the socket's input stream to read in the file from the network and open the output stream to the
+            // file so we can write it to disk.
+            InputStream inputStream = this.socket.getInputStream();
+            OutputStream fileWriter = new FileOutputStream(file);
+
+            // Receive the file from the stream.
+            int count;
+            long fileSize = fileToReceive.getSize();
+            while (fileSize > 0 &&
+                    (count = inputStream.read(fileBytes, 0, (int) Math.min(fileBytes.length, fileToReceive.getSize()))) > 0) {
+                fileWriter.write(fileBytes, 0, count);
+                fileSize -= count;
+            }
+
+            System.out.println(fileToReceive.getName() + " successfully received.");
+
+            // Cleanup
+            fileWriter.flush();
+            fileWriter.close();
+        } catch (IOException e) {
+            System.out.println("receiveFile() failed");
+            e.printStackTrace();
+        }
+    }
+
+    protected void sendFile(SerialFileAttr fileToSend) {
+        // Get the file + allocate the buffer in an array.
+        File file = new File(directory + File.separatorChar, fileToSend.getName());
+        byte [] fileBytes = new byte[BUFFER_SIZE]; // buffer size
+
+        try {
+            // Open the file input stream (to read in the file) and open the output stream from the socket
+            // so we can send the file over the network.
+            InputStream fileReader = new FileInputStream(file);
+            OutputStream outputStream = this.socket.getOutputStream();
+
+            // Send the bytes of the file over the stream.
+            int count = 0;
+            while ((count = fileReader.read(fileBytes, 0, (int) Math.min(fileBytes.length, fileToSend.getSize()))) > 0) {
+                outputStream.write(fileBytes, 0, count);
+            }
+
+            System.out.println(fileToSend.getName() + " successfully sent.");
+
+            // Cleanup
+            outputStream.flush();
+            fileReader.close();
+        } catch (IOException e) {
+            System.out.println("sendFile() failed");
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * From the first argument ('local files'), compare the list with the 2nd argument ('remote files').
+     * The result of this comparison should include all files from 'remote' that do not exist or are newer than
+     * the same file in 'local'.
+     *
+     * @param localFiles HashSet of SerialFileAttr's that belong to the 'local' computer.
+     * @param remoteFiles HashSet of SerialFileAttr's that belong to the 'remote' computer
+     * @return  HashSet of SerialFileAttr's of files to pull from remote computer to local computer.
+     */
+    protected HashSet<SerialFileAttr> compare(HashSet<SerialFileAttr> localFiles, HashSet<SerialFileAttr> remoteFiles) {
+        HashSet<SerialFileAttr> filesToReturn = new HashSet<SerialFileAttr>();
+
+        for ( SerialFileAttr remoteFile : remoteFiles) {
+            if (!localFiles.contains(remoteFile)) {
+                // if this computer doesn't have the remote file, then just pull it.
+                filesToReturn.add(remoteFile);
+            } else {
+                // this computer does contain a file that the remote computer has, so find the newer one and pull it
+                for ( SerialFileAttr localFile : localFiles) {
+                    // Find the same, but newer file.
+                    if (remoteFile.isNewer(localFile)) {
+                        filesToReturn.add(remoteFile);
+                        break;
+                    }
+                } // end for
+            } // end if/else
+        }
+
+        return filesToReturn;
+    }
+
+    /**
+     * Closes the socket associated with this instance.
+     */
+    protected void closeSocket() {
+        if (this.socket == null)
+            return;
+
+        try {
+            this.socket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 }
