@@ -77,7 +77,7 @@ public class Client extends NetworkProtocol implements Runnable
     /**
      * Creates a Socket + makes a connection to the remote computer.
      */
-    private void connectToServer(){
+    public void connectToServer(){
         try {
             System.out.println("Connecting to " + serverName  + " on port " + this.port);
             this.socket = new Socket(serverName, this.port);

@@ -220,7 +220,7 @@ public abstract class NetworkProtocol {
         for(SerialFileAttr localFile : localFiles){
             if(!remoteFiles.contains(localFile)){
                 System.out.println( "remote files does not contain " + localFile.getName());
-                deleteFile("external1" + File.separatorChar + localFile.getName());
+                deleteFile(File.separatorChar + localFile.getName());
             }
         }
     }

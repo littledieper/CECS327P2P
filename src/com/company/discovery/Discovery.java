@@ -14,6 +14,7 @@ public class Discovery extends Thread {
     static private HashSet<String> ips = new HashSet<>();
     /** Port to check for listening ServerSockets. */
     private int port;
+    private boolean initialPass = false;
 
     /**
      * Default constructor - just sets the searching port to 27015
@@ -36,6 +37,24 @@ public class Discovery extends Thread {
             getAvailableNodes();
         }
     }
+
+    public HashSet<String> getIps() { return ips; }
+    /*
+    public HashSet<String> geIPs(){
+        HashSet<String> tempIPS;
+        if(this.isAlive()) {
+            interrupt();
+            tempIPS = ips;
+            this.start();
+        }
+        else
+            tempIPS = ips;
+
+        return tempIPS;
+    }
+    */
+
+    public boolean initialPass(){return initialPass;};
 
     /**
      * Finds the available nodes on the local network that have ServerSockets
@@ -69,6 +88,7 @@ public class Discovery extends Thread {
                     ips.remove(possibleNode);
             }
         }
+        initialPass = true;
     }
 
     /**
@@ -161,6 +181,4 @@ public class Discovery extends Thread {
 
         return ip.substring(0, ip.lastIndexOf("."));
     }
-
-    public HashSet<String> getIps() { return ips; }
 }
