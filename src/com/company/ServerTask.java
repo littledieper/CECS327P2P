@@ -33,15 +33,16 @@ public class ServerTask extends NetworkProtocol implements Runnable
     @Override
     public void run() {
 
-        String localDir = "external" + File.separatorChar; //getLocalDirectory();
+        String localDir = getLocalDirectory(); //"external" + File.separatorChar;
+        String remoteDir = getRemoteDirectory(this.socket);
 
         // Send this computer's local files to the remote PC.
-        sendFileInfo(FileHandler.getAllLocalFileInfo(localDir));
+        sendFileInfo(FileHandler.getAllLocalFileInfo(remoteDir));
 
         // Receive the files that the client wants to push to this computer and receive them.
         ArrayList<SerialFileAttr> filesToPull = receiveFileInfo();
         for (SerialFileAttr fileToPull: filesToPull) {
-            receiveFile(localDir, fileToPull);
+            receiveFile(remoteDir, fileToPull);
         }
 
         if (initialRun) {

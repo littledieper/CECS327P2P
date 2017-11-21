@@ -97,6 +97,10 @@ public abstract class NetworkProtocol {
         byte [] fileBytes = new byte[BUFFER_SIZE]; // buffer size
 
         try {
+            // if the parent directory doesn't exist, make it
+            if (!file.getParentFile().exists())
+                file.getParentFile().mkdirs();
+
             // If it doesn't exist, create the destination file.
             file.createNewFile();
 
