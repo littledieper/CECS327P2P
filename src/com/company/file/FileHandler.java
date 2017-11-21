@@ -68,6 +68,11 @@ public class FileHandler {
      * @param path  Relative / absolute path of the directory.
      */
 	public static ArrayList<SerialFileAttr> getAllLocalFileInfo(String path) {
+	    File directory = new File(path);
+	    if (!directory.exists()) {
+	        directory.mkdir();
+        }
+
         ArrayList<SerialFileAttr> files = new ArrayList<>();
 
 		// Walk the files in the directory of 'this.path' and add them to the set.
