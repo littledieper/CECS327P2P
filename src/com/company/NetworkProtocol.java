@@ -200,4 +200,38 @@ public abstract class NetworkProtocol {
             e.printStackTrace();
         }
     }
+
+    protected void deleteFile(String sPath){
+        File file = new File(sPath);
+        if(file.exists())
+            file.delete();
+    }
+
+    protected void pullAndCompareFiles(HashSet<SerialFileAttr> localFiles, HashSet<SerialFileAttr> remoteFiles){
+        HashSet<SerialFileAttr> filesToPull = compare(localFiles, remoteFiles);
+
+
+        // Let the remote PC know which files we want (as comparison is a local process) and pull the files into the local directory.
+        sendFileInfo(filesToPull);
+
+        for (SerialFileAttr fileToPull: filesToPull) {
+            receiveFile(fileToPull);
+        }
+        for(SerialFileAttr localFile : localFiles){
+            if(!remoteFiles.contains(localFile)){
+                System.out.println( "remote files does not contain " + localFile.getName());
+                deleteFile("external1" + File.separatorChar + localFile.getName());
+            }
+        }
+    }
+
+    protected void pushCurrentFiles(HashSet<SerialFileAttr> localFiles, HashSet<SerialFileAttr> remoteFiles){
+        // Now we work on pushing the local files to remote computer, so compare to get list of files to push.
+        // We don't want (nor do we care about) the local changes made to the local directory after we pulled updated files.
+        HashSet<SerialFileAttr> filesToPush = compare(remoteFiles, localFiles);
+        sendFileInfo(filesToPush);
+        for (SerialFileAttr fileToPush: filesToPush) {
+            sendFile(fileToPush);
+        }
+    }
 }

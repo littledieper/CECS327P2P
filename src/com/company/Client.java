@@ -66,19 +66,9 @@ public class Client extends NetworkProtocol implements Runnable
         HashSet<SerialFileAttr> remoteFiles = receiveFileInfo();
         HashSet<SerialFileAttr> filesToPull = compare(localFiles, remoteFiles);
 
-        // Let the remote PC know which files we want (as comparison is a local process) and pull the files into the local directory.
-        sendFileInfo(filesToPull);
-        for (SerialFileAttr fileToPull: filesToPull) {
-            receiveFile(fileToPull);
-        }
+        pullAndCompareFiles(localFiles, remoteFiles);
 
-        // Now we work on pushing the local files to remote computer, so compare to get list of files to push.
-        // We don't want (nor do we care about) the local changes made to the local directory after we pulled updated files.
-        HashSet<SerialFileAttr> filesToPush = compare(remoteFiles, localFiles);
-        sendFileInfo(filesToPush);
-        for (SerialFileAttr fileToPush: filesToPush) {
-            sendFile(fileToPush);
-        }
+        //pushCurrentFiles(localFiles, remoteFiles);
 
         // Cleanup
         closeSocket();

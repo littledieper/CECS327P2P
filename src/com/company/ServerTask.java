@@ -31,6 +31,7 @@ public class ServerTask extends NetworkProtocol implements Runnable
         // Send this computer's local files to the remote PC.
         sendFileInfo(FileHandler.getAllLocalFileInfo(directory));
 
+
         // Receive the files that the client thinks it needs and send it over.
         HashSet<SerialFileAttr> filesToPush = receiveFileInfo();
         for (SerialFileAttr fileToPush: filesToPush) {
