@@ -23,11 +23,11 @@ public class SerialFileAttr implements Serializable {
         this.md5 = FileHandler.getMD5(file);
     }
 
-    public SerialFileAttr(String file, BasicFileAttributes fileAttr){
+    public SerialFileAttr(String directory, String file, BasicFileAttributes fileAttr) {
         this.name = file;
         this.lastModifiedTime = fileAttr.lastModifiedTime().toInstant();
         this.size = fileAttr.size();
-        this.md5 = FileHandler.getMD5(new File (file));
+        this.md5 = FileHandler.getMD5(new File (directory + file));
     }
 
     public String getName() {
@@ -61,7 +61,6 @@ public class SerialFileAttr implements Serializable {
 
         SerialFileAttr that = (SerialFileAttr) o;
 
-        if (size != that.size) return false;
         if (name != null ? !name.equals(that.name) : that.name != null) return false;
         return md5 != null ? md5.equals(that.md5) : that.md5 == null;
     }
@@ -70,7 +69,6 @@ public class SerialFileAttr implements Serializable {
     public int hashCode() {
         int result = name != null ? name.hashCode() : 0;
         result = 31 * result + (md5 != null ? md5.hashCode() : 0);
-        result = 31 * result + (int) (size ^ (size >>> 32));
         return result;
     }
 

@@ -9,7 +9,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.HashSet;
+import java.util.ArrayList;
 
 public class FileHandler {
 
@@ -59,7 +59,7 @@ public class FileHandler {
     /**
      * Returns all files in the directory of where the program resides + \external\
      */
-    public static HashSet<SerialFileAttr> getAllLocalFileInfo() {
+    public static ArrayList<SerialFileAttr> getAllLocalFileInfo() {
         return getAllLocalFileInfo("external" + File.separatorChar);
     }
 
@@ -67,16 +67,16 @@ public class FileHandler {
      * Returns all files in the directory (includes subdirectories)
      * @param path  Relative / absolute path of the directory.
      */
-	public static HashSet<SerialFileAttr> getAllLocalFileInfo(String path) {
-		HashSet<SerialFileAttr> files = new HashSet<>();
+	public static ArrayList<SerialFileAttr> getAllLocalFileInfo(String path) {
+        ArrayList<SerialFileAttr> files = new ArrayList<>();
 
 		// Walk the files in the directory of 'this.path' and add them to the set.
 		try {
 			Files.walkFileTree(Paths.get(path), new SimpleFileVisitor<Path>() {
                 public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
                     Path getPath = Paths.get(path);
-                    //String relPath = file.toAbsolutePath().toString().substring(getPath.toAbsolutePath().toString().length()+1);
-                    files.add(new SerialFileAttr(file.toFile(), attrs));
+                    String relPath = file.toAbsolutePath().toString().substring(getPath.toAbsolutePath().toString().length()+1);
+                    files.add(new SerialFileAttr(path, relPath, attrs));
                     return FileVisitResult.CONTINUE;
                 }
             });
