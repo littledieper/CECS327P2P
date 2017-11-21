@@ -4,39 +4,39 @@ import com.company.file.SerialFileAttr;
 
 import java.net.*;
 import java.io.*;
-import java.util.HashSet;
+import java.util.ArrayList;
 
 public class Client extends NetworkProtocol implements Runnable
 {
     private String serverName;
     private int port;
+    private boolean initialRun;
 
     public static void main(String [] args)
     {
-        Client client = new Client("127.0.0.1");
+        Client client = new Client("127.0.0.1", 21, false);
         new Thread(client).start();
     }
 
     public Client()
     {
-        this("0.0.0.0", 21, "external1" + File.separatorChar);
+        this("0.0.0.0", 21);
     }
 
     public Client(String serverName)
     {
-        this(serverName, 21, "external1" + File.separatorChar);
+        this(serverName, 21);
     }
 
     public Client(String serverName, int port)
     {
-        this(serverName, port, "external1" + File.separatorChar);
+        this(serverName, port, false);
     }
 
-    public Client(String serverName, int port, String directory)
-    {
+    public Client(String serverName, int port, boolean initialRun) {
         this.serverName = serverName;
         this.port = port;
-        this.directory = directory;
+        this.initialRun = initialRun;
     }
 
     /**
@@ -61,14 +61,34 @@ public class Client extends NetworkProtocol implements Runnable
             return;
         }
 
-        // Get this computer's local files and the remote computer's files and compare them to determine the files we want to pull.
-        HashSet<SerialFileAttr> localFiles = FileHandler.getAllLocalFileInfo(directory);
-        HashSet<SerialFileAttr> remoteFiles = receiveFileInfo();
-        HashSet<SerialFileAttr> filesToPull = compare(localFiles, remoteFiles);
+        String localDir = getLocalDirectory();//"external1" + File.separatorChar;
 
         pullAndCompareFiles(localFiles, remoteFiles);
-
+		
         //pushCurrentFiles(localFiles, remoteFiles);
+		/*
+        // Get this computer's local files and the remote computer's files and compare them to determine the files we want to pull.
+        ArrayList<SerialFileAttr> localFiles = FileHandler.getAllLocalFileInfo(localDir);
+        ArrayList<SerialFileAttr> remoteFiles = receiveFileInfo();
+
+        // Now we work on pushing the local files to remote computer, so compare to get list of files to push.
+        // We don't want (nor do we care about) the local changes made to the local directory after we pulled updated files.
+        ArrayList<SerialFileAttr> filesToPush = compare(remoteFiles, localFiles);
+        sendFileInfo(filesToPush);
+        for (SerialFileAttr fileToPush: filesToPush) {
+            sendFile(localDir, fileToPush);
+        }
+
+        if (initialRun) {
+            ArrayList<SerialFileAttr> filesToPull = compare(localFiles, remoteFiles);
+
+            // Let the remote PC know which files we want (as comparison is a local process) and pull the files into the local directory.
+            sendFileInfo(filesToPull);
+            for (SerialFileAttr fileToPull: filesToPull) {
+                receiveFile(getRemoteDirectory(this.socket), fileToPull);
+            }
+        }
+		*/
 
         // Cleanup
         closeSocket();
