@@ -3,21 +3,25 @@ package com.company;
 import com.company.file.FileHandler;
 import com.company.file.SerialFileAttr;
 
+import java.io.File;
 import java.net.Socket;
-import java.util.HashSet;
+import java.util.ArrayList;
 
 /**
  * Dispatched thread when Server accepts a connection.
  */
 public class ServerTask extends NetworkProtocol implements Runnable
 {
+    /** Is this the initial run? */
+    private boolean initialRun;
+
     /**
      * Create ServerTask that operates on a Socket connection.
      * @param socket    socket (connection) to a computer in the network.
      */
-    public ServerTask(Socket socket, String directory) {
+    public ServerTask(Socket socket, boolean initialRun) {
         this.socket = socket;
-        this.directory = directory;
+        this.initialRun = initialRun;
     }
 
     /**
@@ -28,19 +32,24 @@ public class ServerTask extends NetworkProtocol implements Runnable
     */
     @Override
     public void run() {
-        // Send this computer's local files to the remote PC.
-        sendFileInfo(FileHandler.getAllLocalFileInfo(directory));
 
-        // Receive the files that the client thinks it needs and send it over.
-        HashSet<SerialFileAttr> filesToPush = receiveFileInfo();
-        for (SerialFileAttr fileToPush: filesToPush) {
-            sendFile(fileToPush);
-        }
+        String localDir = "external" + File.separatorChar; //getLocalDirectory();
+
+        // Send this computer's local files to the remote PC.
+        sendFileInfo(FileHandler.getAllLocalFileInfo(localDir));
 
         // Receive the files that the client wants to push to this computer and receive them.
-        HashSet<SerialFileAttr> filesToPull = receiveFileInfo();
+        ArrayList<SerialFileAttr> filesToPull = receiveFileInfo();
         for (SerialFileAttr fileToPull: filesToPull) {
-            receiveFile(fileToPull);
+            receiveFile(localDir, fileToPull);
+        }
+
+        if (initialRun) {
+            // Receive the files that the client thinks it needs and send it over.
+            ArrayList<SerialFileAttr> filesToPush = receiveFileInfo();
+            for (SerialFileAttr fileToPush: filesToPush) {
+                sendFile(getRemoteDirectory(this.socket) + File.separatorChar, fileToPush);
+            }
         }
 
         // Cleanup

@@ -3,8 +3,10 @@ package com.company;
 import com.company.file.SerialFileAttr;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.net.Socket;
-import java.util.HashSet;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
 
 public abstract class NetworkProtocol {
 
@@ -15,11 +17,6 @@ public abstract class NetworkProtocol {
      * Classes that extend + create objects of this should close this on cleanup.
      */
     protected Socket socket;
-
-    /**
-     * String of the relative directory to send or receive files from.
-     */
-    protected String directory;
 
     protected String recieveMessage() {
         if (this.socket == null)
@@ -53,16 +50,16 @@ public abstract class NetworkProtocol {
      * @return  All files in the remote PC's directory.
      *          NULL if passed something that's not the above container.
      */
-    protected HashSet<SerialFileAttr> receiveFileInfo() {
-        HashSet<SerialFileAttr> files = null;
+    protected ArrayList<SerialFileAttr> receiveFileInfo() {
+        ArrayList<SerialFileAttr> files = null;
 
         try {
             ObjectInputStream in = new ObjectInputStream(this.socket.getInputStream());
 
             // Read the object from the stream and make sure its a HashSet.
             Object receivedObject = in.readObject();
-            if (receivedObject instanceof HashSet)
-                files = (HashSet<SerialFileAttr>) receivedObject;
+            if (receivedObject instanceof ArrayList)
+                files = (ArrayList<SerialFileAttr>) receivedObject;
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -74,10 +71,10 @@ public abstract class NetworkProtocol {
     }
 
     /**
-     * Sends a HashSet of SerialFileAttr's transferred over the network via a socket to the remote computer.
+     * Sends a ArrayList of SerialFileAttr's transferred over the network via a socket to the remote computer.
      * @param files     files to send over the network.
      */
-    protected void sendFileInfo(HashSet<SerialFileAttr> files) {
+    protected void sendFileInfo(ArrayList<SerialFileAttr> files) {
         if (files == null)
             return;
 
@@ -94,7 +91,7 @@ public abstract class NetworkProtocol {
      * Receive's a file from the remote computer and places it into the given directory (relative, abs may work).
      * @param fileToReceive File received from the remote PC.
      */
-    protected void receiveFile(SerialFileAttr fileToReceive) {
+    protected void receiveFile(String directory, SerialFileAttr fileToReceive) {
         // Create the file + allocate the buffer in an array
         File file = new File(directory + fileToReceive.getName());
         byte [] fileBytes = new byte[BUFFER_SIZE]; // buffer size
@@ -117,7 +114,7 @@ public abstract class NetworkProtocol {
                 fileSize -= count;
             }
 
-            System.out.println(fileToReceive.getName() + " successfully received.");
+            System.out.println(fileToReceive.getName() + " successfully received into " + directory);
 
             // Cleanup
             fileWriter.flush();
@@ -128,9 +125,9 @@ public abstract class NetworkProtocol {
         }
     }
 
-    protected void sendFile(SerialFileAttr fileToSend) {
+    protected void sendFile(String directory, SerialFileAttr fileToSend) {
         // Get the file + allocate the buffer in an array.
-        File file = new File(directory + File.separatorChar, fileToSend.getName());
+        File file = new File(directory + fileToSend.getName());
         byte [] fileBytes = new byte[BUFFER_SIZE]; // buffer size
 
         try {
@@ -145,7 +142,7 @@ public abstract class NetworkProtocol {
                 outputStream.write(fileBytes, 0, count);
             }
 
-            System.out.println(fileToSend.getName() + " successfully sent.");
+            System.out.println(fileToSend.getName() + " successfully sent to " + directory);
 
             // Cleanup
             outputStream.flush();
@@ -165,8 +162,8 @@ public abstract class NetworkProtocol {
      * @param remoteFiles HashSet of SerialFileAttr's that belong to the 'remote' computer
      * @return  HashSet of SerialFileAttr's of files to pull from remote computer to local computer.
      */
-    protected HashSet<SerialFileAttr> compare(HashSet<SerialFileAttr> localFiles, HashSet<SerialFileAttr> remoteFiles) {
-        HashSet<SerialFileAttr> filesToReturn = new HashSet<SerialFileAttr>();
+    protected ArrayList<SerialFileAttr> compare(ArrayList<SerialFileAttr> localFiles, ArrayList<SerialFileAttr> remoteFiles) {
+        ArrayList<SerialFileAttr> filesToReturn = new ArrayList<>();
 
         for ( SerialFileAttr remoteFile : remoteFiles) {
             if (!localFiles.contains(remoteFile)) {
@@ -185,6 +182,22 @@ public abstract class NetworkProtocol {
         }
 
         return filesToReturn;
+    }
+
+    protected String getRemoteDirectory(Socket socket) {
+        return socket.getInetAddress().getCanonicalHostName() + File.separatorChar;
+    }
+
+    public static String getLocalDirectory() {
+        String localHostname = "";
+
+        try {
+            localHostname = InetAddress.getLocalHost().getHostName() + File.separatorChar;
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+
+        return localHostname;
     }
 
     /**

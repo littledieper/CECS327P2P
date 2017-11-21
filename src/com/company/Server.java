@@ -38,7 +38,7 @@ public class Server extends NetworkProtocol implements Runnable
 
             // Dispatch created socket to a worker server thread.
             if (socket != null) {
-                Runnable serverTask = new ServerTask(socket, "external" + File.separatorChar);
+                Runnable serverTask = new ServerTask(socket, false);
                 new Thread(serverTask).start();  // might want to create a thread pool here, we'll see.
             }
         }
