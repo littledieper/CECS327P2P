@@ -91,4 +91,36 @@ public class FileHandler {
 
 		return files;
 	}
+
+    /**
+     * Removes all files that are not in the given List<> of files in the given directory.
+     * @param dir   Directory to clean up
+     * @param files List of files that should not be deleted.
+     */
+	public static void cleanup(String dir, ArrayList<SerialFileAttr> files) {
+	    // If the directory doesn't exist, why do you care?
+        File directory = new File(dir);
+        if (!directory.exists()) {
+            return;
+        }
+
+        // Walk the directory and if the file isn't in the list, delete it.
+        try {
+            Files.walkFileTree(Paths.get(dir), new SimpleFileVisitor<Path>() {
+                public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
+                    String relPath = file.toAbsolutePath().toString().substring(Paths.get(dir).toAbsolutePath().toString().length()+1);
+                    SerialFileAttr fileToTest = new SerialFileAttr(dir, relPath, attrs);
+
+                    if (!files.contains(fileToTest)) {
+                        File fileToDelete = new File(file.toString());
+                        fileToDelete.delete();
+                    }
+                    return FileVisitResult.CONTINUE;
+                }
+            });
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
 }
