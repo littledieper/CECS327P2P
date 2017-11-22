@@ -28,6 +28,10 @@ public class Client extends NetworkProtocol implements Runnable
         this(serverName, 21);
     }
 
+    public Client(String serverName, boolean initialRun) {
+        this(serverName, 21, initialRun);
+    }
+
     public Client(String serverName, int port)
     {
         this(serverName, port, false);
@@ -61,7 +65,43 @@ public class Client extends NetworkProtocol implements Runnable
             return;
         }
 
-        String localDir = getLocalDirectory();//"external1" + File.separatorChar;
+        // Get the directory paths.
+        String localDir = getLocalDirectory();
+        String remoteDir = getRemoteDirectory(this.socket);
+
+        // Get this computer's list of files that we want to send over and get the list of files that 'belong' to
+        // this PC that are saved on the remote PC.
+        ArrayList<SerialFileAttr> localFiles = FileHandler.getAllLocalFileInfo(localDir);
+        ArrayList<SerialFileAttr> remoteCopyOfLocalFiles = receiveFileInfo();
+
+        // Compare the two lists, and get information on any new files or newer versions.
+        // Send the info about the list of files we want to push, then push the actual files over.
+        ArrayList<SerialFileAttr> filesToPush = compare(remoteCopyOfLocalFiles, localFiles);
+        sendFileInfo(filesToPush);
+        for (SerialFileAttr fileToPush : filesToPush) {
+            sendFile(localDir, fileToPush);
+        }
+
+        if (initialRun) {
+            // Now we're working on pulling from the remote PC.
+            // So, grab the list of files that 'belong' to the remote PC that are saved on locally on this PC and
+            // then grab the list of files that are currently saved on the remote PC.
+            ArrayList<SerialFileAttr> localCopyOfRemoteFiles = FileHandler.getAllLocalFileInfo(remoteDir);
+            ArrayList<SerialFileAttr> remoteFiles = receiveFileInfo();
+
+            // Compare the two lists, and get information on any new files or newer versions from that remote PC that we want.
+            // Then, receive them as the remote PC should be sending them over at this time.
+            ArrayList<SerialFileAttr> filesToPull = compare(localCopyOfRemoteFiles, remoteFiles);
+            sendFileInfo(filesToPull);
+            for (SerialFileAttr fileToPull : filesToPull) {
+                receiveFile(remoteDir, fileToPull);
+            }
+        }
+
+        /*
+        // Get the directories.
+        String localDir = getLocalDirectory();
+        String remoteDir = getRemoteDirectory(this.socket);
 
         // Get this computer's local files and the remote computer's files and compare them to determine the files we want to pull.
         ArrayList<SerialFileAttr> localFiles = FileHandler.getAllLocalFileInfo(localDir);
@@ -77,14 +117,13 @@ public class Client extends NetworkProtocol implements Runnable
 
         if (initialRun) {
             ArrayList<SerialFileAttr> filesToPull = compare(localFiles, remoteFiles);
-
             // Let the remote PC know which files we want (as comparison is a local process) and pull the files into the local directory.
             sendFileInfo(filesToPull);
             for (SerialFileAttr fileToPull: filesToPull) {
-                receiveFile(getRemoteDirectory(this.socket), fileToPull);
+                receiveFile(remoteDir, fileToPull);
             }
         }
-
+        */
         // Cleanup
         closeSocket();
     }

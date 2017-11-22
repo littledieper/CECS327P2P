@@ -10,7 +10,7 @@ public class Server extends NetworkProtocol implements Runnable
     private int timeout;
 
     public static void main(String args[]) {
-        Server server = new Server(21, 0);
+        Server server = new Server();
         new Thread(server).start();
     }
 
@@ -38,7 +38,7 @@ public class Server extends NetworkProtocol implements Runnable
 
             // Dispatch created socket to a worker server thread.
             if (socket != null) {
-                Runnable serverTask = new ServerTask(socket, false);
+                Runnable serverTask = new ServerTask(socket);
                 new Thread(serverTask).start();  // might want to create a thread pool here, we'll see.
             }
         }

@@ -12,16 +12,12 @@ import java.util.ArrayList;
  */
 public class ServerTask extends NetworkProtocol implements Runnable
 {
-    /** Is this the initial run? */
-    private boolean initialRun;
-
     /**
      * Create ServerTask that operates on a Socket connection.
      * @param socket    socket (connection) to a computer in the network.
      */
-    public ServerTask(Socket socket, boolean initialRun) {
+    public ServerTask(Socket socket) {
         this.socket = socket;
-        this.initialRun = initialRun;
     }
 
     /**
@@ -32,12 +28,39 @@ public class ServerTask extends NetworkProtocol implements Runnable
     */
     @Override
     public void run() {
-
         String localDir = getLocalDirectory(); //"external" + File.separatorChar;
         String remoteDir = getRemoteDirectory(this.socket);
 
+        // Get the list of files from the remote PC's directory and send it over.
+        ArrayList<SerialFileAttr> localFilesOfRemoteFiles = FileHandler.getAllLocalFileInfo(remoteDir);
+        sendFileInfo(localFilesOfRemoteFiles);
+
+        // Receive the list of files the remote PC is going to push to this PC, then start receiving the files
+        // as the remote PC should be sending them over at this time.
+        ArrayList<SerialFileAttr> filesToPull = receiveFileInfo();
+        for (SerialFileAttr fileToPull : filesToPull) {
+            receiveFile(remoteDir, fileToPull);
+        }
+
+        // If the client is not running an initial run, the socket is likely closed at this time
+        // so we might as well test for it.
+        if (this.socket.isClosed())
+            return;
+
+        // Now we're working on pushing local files to the remote PC.
+        // So, grab the list of files from this PC's local directory and send it over.
+        ArrayList<SerialFileAttr> localFiles = FileHandler.getAllLocalFileInfo(localDir);
+        sendFileInfo(localFiles);
+
+        // Receive the list of files that the remote PC wants from this PC, then start to push the files.
+        ArrayList<SerialFileAttr> filesToPush = receiveFileInfo();
+        for (SerialFileAttr fileToPush : filesToPush) {
+            sendFile(localDir, fileToPush);
+        }
+
+        /*
         // Send this computer's local files to the remote PC.
-        sendFileInfo(FileHandler.getAllLocalFileInfo(remoteDir));
+        sendFileInfo(FileHandler.getAllLocalFileInfo(localDir));
 
         // Receive the files that the client wants to push to this computer and receive them.
         ArrayList<SerialFileAttr> filesToPull = receiveFileInfo();
@@ -45,14 +68,13 @@ public class ServerTask extends NetworkProtocol implements Runnable
             receiveFile(remoteDir, fileToPull);
         }
 
-        if (initialRun) {
-            // Receive the files that the client thinks it needs and send it over.
-            ArrayList<SerialFileAttr> filesToPush = receiveFileInfo();
-            for (SerialFileAttr fileToPush: filesToPush) {
-                sendFile(getRemoteDirectory(this.socket) + File.separatorChar, fileToPush);
-            }
+        // Receive the files that the client thinks it needs and send it over.
+        ArrayList<SerialFileAttr> filesToPush = receiveFileInfo();
+        for (SerialFileAttr fileToPush: filesToPush) {
+            sendFile(localDir, fileToPush);
         }
 
+        */
         // Cleanup
         closeSocket();
     }
