@@ -1,5 +1,7 @@
 package com.company.discovery;
 
+import com.company.Client;
+
 import java.io.IOException;
 import java.net.*;
 import java.util.HashSet;
@@ -14,12 +16,14 @@ public class Discovery extends Thread {
     static private HashSet<String> ips = new HashSet<>();
     /** Port to check for listening ServerSockets. */
     private int port;
+    /** Is this the initial run? */
+    private boolean initialRun;
 
     /**
      * Default constructor - just sets the searching port to 27015
      */
     public Discovery() {
-        int port = 27015;
+        this(27015);
     }
 
     /**
@@ -28,12 +32,24 @@ public class Discovery extends Thread {
      */
     public Discovery(int port) {
         this.port = port;
+        this.initialRun = true;
     }
 
     @SuppressWarnings("InfiniteLoopStatement")
     public void run() {
         while (true) {
             getAvailableNodes();
+
+            // Make initial run false after the first iteration of launching discovery.
+            // From now on, we only want to push our local files to remote PC's.
+            initialRun = false;
+
+            try {
+                sleep(15000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
         }
     }
 
@@ -42,7 +58,7 @@ public class Discovery extends Thread {
      * open on port this.port and adds them to the this.ips ArrayList
      */
     private void getAvailableNodes() {
-        int timeout = 750;
+        int timeout = 300;
         String ip = getLocalIp();
         String subnet = getSubnet();
 
@@ -61,6 +77,11 @@ public class Discovery extends Thread {
                 // is it listening on our port?
                 if (isListeningOnPort(possibleNode, port, timeout)) {
                     ips.add(possibleNode);
+
+                    // If we find a node that is running our program, might as well sync with it too.
+                    // If initialRun is true, this will push local files to the remote computer and pull remote files to the local copy of the remote PC's directory.
+                    // If initialRun is false, this will only push local files to the remote computer.
+                    new Thread(new Client(possibleNode, 21, initialRun)).start();
                 } // end nested if
             } else {
                 // If the address isn't reachable but is contained in our list, then we should remove it
@@ -113,19 +134,13 @@ public class Discovery extends Thread {
 
             return socket.isConnected();
         } catch (IOException e) {
-            System.out.println("isListeningOnPort() could not find host.");
-            //e.printStackTrace();
+            //System.out.println("isListeningOnPort() could not find host.");
         } finally {
-            if (socket != null)
-            {
-
+            if (socket != null) {
                 try {
-                    sleep(5000);
                     socket.close();
                 } catch (IOException e) {
                     //e.printStackTrace();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
                 }
             }
         }
@@ -163,4 +178,8 @@ public class Discovery extends Thread {
     }
 
     public HashSet<String> getIps() { return ips; }
+
+    public boolean isReady() {
+        return initialRun;
+    }
 }
