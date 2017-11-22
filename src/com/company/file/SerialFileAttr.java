@@ -73,15 +73,13 @@ public class SerialFileAttr implements Serializable {
     }
 
     @Override
-    public String toString(){
-        StringBuilder sb = new StringBuilder();
-        sb.append(
-                "Name: "+name+"\n"+
-                "LMT: " + lastModifiedTime+"\n"+
-                "size: "+size + "\n" +
-                "MD5: "+md5+"\n"
-        );
-        return sb.toString();
+    public String toString() {
+        return "SerialFileAttr{" +
+                "name='" + name + '\'' +
+                ", md5='" + md5 + '\'' +
+                ", lastModifiedTime=" + lastModifiedTime +
+                ", size=" + size +
+                "}\n";
     }
 
     public boolean isNewer(SerialFileAttr localFile) {

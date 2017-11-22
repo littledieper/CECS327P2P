@@ -18,33 +18,6 @@ public abstract class NetworkProtocol {
      */
     protected Socket socket;
 
-    protected String recieveMessage() {
-        if (this.socket == null)
-            return "";
-
-        try {
-            DataInputStream in = new DataInputStream(this.socket.getInputStream());
-            return in.readUTF();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return "";
-    }
-
-    protected void sendMessage(String message) {
-        if (this.socket == null)
-            return;
-
-        try {
-            DataOutputStream out = new DataOutputStream(this.socket.getOutputStream());
-            out.writeUTF(message);
-            out.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
     /**
      * Receives a HashSet of SerialFileAttr's transferred over the network via a socket from the remote computer.
      * @return  All files in the remote PC's directory.
@@ -62,7 +35,9 @@ public abstract class NetworkProtocol {
                 files = (ArrayList<SerialFileAttr>) receivedObject;
 
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("receiveFileInfo() failed. Could be expected if client wasn't doing an initial run.");
+            return new ArrayList<>();
+            //e.printStackTrace();
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -158,24 +133,24 @@ public abstract class NetworkProtocol {
     }
 
     /**
-     * From the first argument ('local files'), compare the list with the 2nd argument ('remote files').
-     * The result of this comparison should include all files from 'remote' that do not exist or are newer than
-     * the same file in 'local'.
+     * From the first argument 'oldList', compare the list with the 2nd argument 'newList'
+     * The result of this comparison should include all files from 'newList' that do not exist or are newer than
+     * the same file in 'oldList'.
      *
-     * @param localFiles HashSet of SerialFileAttr's that belong to the 'local' computer.
-     * @param remoteFiles HashSet of SerialFileAttr's that belong to the 'remote' computer
+     * @param oldList HashSet of SerialFileAttr's that belong to the 'local' computer.
+     * @param newList HashSet of SerialFileAttr's that belong to the 'remote' computer
      * @return  HashSet of SerialFileAttr's of files to pull from remote computer to local computer.
      */
-    protected ArrayList<SerialFileAttr> compare(ArrayList<SerialFileAttr> localFiles, ArrayList<SerialFileAttr> remoteFiles) {
+    protected ArrayList<SerialFileAttr> compare(ArrayList<SerialFileAttr> oldList, ArrayList<SerialFileAttr> newList) {
         ArrayList<SerialFileAttr> filesToReturn = new ArrayList<>();
 
-        for ( SerialFileAttr remoteFile : remoteFiles) {
-            if (!localFiles.contains(remoteFile)) {
+        for ( SerialFileAttr remoteFile : newList) {
+            if (!oldList.contains(remoteFile)) {
                 // if this computer doesn't have the remote file, then just pull it.
                 filesToReturn.add(remoteFile);
             } else {
                 // this computer does contain a file that the remote computer has, so find the newer one and pull it
-                for ( SerialFileAttr localFile : localFiles) {
+                for ( SerialFileAttr localFile : oldList) {
                     // Find the same, but newer file.
                     if (remoteFile.isNewer(localFile)) {
                         filesToReturn.add(remoteFile);
