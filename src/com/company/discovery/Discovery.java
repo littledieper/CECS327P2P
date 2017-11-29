@@ -81,7 +81,7 @@ public class Discovery extends Thread {
                     // If we find a node that is running our program, might as well sync with it too.
                     // If initialRun is true, this will push local files to the remote computer and pull remote files to the local copy of the remote PC's directory.
                     // If initialRun is false, this will only push local files to the remote computer.
-                    new Thread(new Client(possibleNode, 21, initialRun)).start();
+                    new Thread(new Client(possibleNode, 27016, initialRun)).start();
                 } // end nested if
             } else {
                 // If the address isn't reachable but is contained in our list, then we should remove it

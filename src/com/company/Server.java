@@ -16,7 +16,7 @@ public class Server extends NetworkProtocol implements Runnable
 
     public Server()
     {
-        this(21, 0);
+        this(27016, 0);
     }
 
     public Server(int port)

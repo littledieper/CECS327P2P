@@ -10,7 +10,7 @@ import java.util.ArrayList;
 
 public abstract class NetworkProtocol {
 
-    private static final int BUFFER_SIZE = 8196; // 8kb
+    private static final int BUFFER_SIZE = 8 * 1024; // 8kb
 
     /**
      * Socket of the class that extends this.
@@ -82,21 +82,21 @@ public abstract class NetworkProtocol {
             // Open the socket's input stream to read in the file from the network and open the output stream to the
             // file so we can write it to disk.
             InputStream inputStream = this.socket.getInputStream();
-            OutputStream fileWriter = new FileOutputStream(file);
+            OutputStream fileWriter = new BufferedOutputStream(new FileOutputStream(file));
 
             // Receive the file from the stream.
             int count;
             long fileSize = fileToReceive.getSize();
             while (fileSize > 0 &&
-                    (count = inputStream.read(fileBytes, 0, (int) Math.min(fileBytes.length, fileToReceive.getSize()))) > 0) {
+                    (count = inputStream.read(fileBytes, 0, (int) Math.min(fileBytes.length, fileSize))) > 0) {
                 fileWriter.write(fileBytes, 0, count);
+                fileWriter.flush();
                 fileSize -= count;
             }
 
             System.out.println(fileToReceive.getName() + " successfully received into " + directory);
 
             // Cleanup
-            fileWriter.flush();
             fileWriter.close();
         } catch (IOException e) {
             System.out.println("receiveFile() failed");
@@ -113,12 +113,14 @@ public abstract class NetworkProtocol {
             // Open the file input stream (to read in the file) and open the output stream from the socket
             // so we can send the file over the network.
             InputStream fileReader = new FileInputStream(file);
-            OutputStream outputStream = this.socket.getOutputStream();
+            OutputStream outputStream = new BufferedOutputStream(this.socket.getOutputStream());
 
             // Send the bytes of the file over the stream.
             int count = 0;
-            while ((count = fileReader.read(fileBytes, 0, (int) Math.min(fileBytes.length, fileToSend.getSize()))) > 0) {
+            long fileSize = fileToSend.getSize();
+            while ((count = fileReader.read(fileBytes, 0, (int) Math.min(fileBytes.length, fileSize))) > 0) {
                 outputStream.write(fileBytes, 0, count);
+                fileSize -= count;
             }
 
             System.out.println(fileToSend.getName() + " successfully sent to " + directory);

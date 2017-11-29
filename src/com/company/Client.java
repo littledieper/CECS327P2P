@@ -14,7 +14,7 @@ public class Client extends NetworkProtocol implements Runnable
 
     public static void main(String [] args)
     {
-        Client client = new Client("127.0.0.1", 21, false);
+        Client client = new Client("127.0.0.1", 27016, true);
         new Thread(client).start();
     }
 
