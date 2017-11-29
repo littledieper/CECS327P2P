@@ -72,6 +72,7 @@ public class Client extends NetworkProtocol implements Runnable
         // Get this computer's list of files that we want to send over and get the list of files that 'belong' to
         // this PC that are saved on the remote PC.
         ArrayList<SerialFileAttr> localFiles = FileHandler.getAllLocalFileInfo(localDir);
+        sendFileInfo(localFiles);        // Send the full list of files over to the remote PC so it can cleanup any leftover files.
         ArrayList<SerialFileAttr> remoteCopyOfLocalFiles = receiveFileInfo();
 
         // Compare the two lists, and get information on any new files or newer versions.
@@ -96,6 +97,9 @@ public class Client extends NetworkProtocol implements Runnable
             for (SerialFileAttr fileToPull : filesToPull) {
                 receiveFile(remoteDir, fileToPull);
             }
+
+            // If we pulled files, make sure to clean the directory of anything that doesn't exist on remote.
+            FileHandler.cleanup(remoteDir, remoteFiles);
         }
 
         /*

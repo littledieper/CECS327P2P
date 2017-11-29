@@ -49,7 +49,7 @@ public class Server extends NetworkProtocol implements Runnable
      * @return  Socket to remote computer the a serverSocket's accept.
      */
     private Socket waitForClient() {
-        System.out.println("Waiting for server on port " + this.serverSocket.getLocalPort() + "...");
+        System.out.println("Waiting for client on port " + this.serverSocket.getLocalPort() + "...");
 
         try {
             return serverSocket.accept();

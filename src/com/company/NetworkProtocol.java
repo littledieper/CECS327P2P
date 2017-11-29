@@ -26,6 +26,7 @@ public abstract class NetworkProtocol {
     protected ArrayList<SerialFileAttr> receiveFileInfo() {
         ArrayList<SerialFileAttr> files = null;
 
+        System.out.println("Receiving file info from remote...");
         try {
             ObjectInputStream in = new ObjectInputStream(this.socket.getInputStream());
 
@@ -53,6 +54,7 @@ public abstract class NetworkProtocol {
         if (files == null)
             return;
 
+        System.out.println("Sending file info to remote...");
         try {
             ObjectOutputStream out = new ObjectOutputStream(this.socket.getOutputStream());
             out.writeObject(files);
@@ -146,6 +148,7 @@ public abstract class NetworkProtocol {
     protected ArrayList<SerialFileAttr> compare(ArrayList<SerialFileAttr> oldList, ArrayList<SerialFileAttr> newList) {
         ArrayList<SerialFileAttr> filesToReturn = new ArrayList<>();
 
+        System.out.println("Comparing files...");
         for ( SerialFileAttr remoteFile : newList) {
             if (!oldList.contains(remoteFile)) {
                 // if this computer doesn't have the remote file, then just pull it.
